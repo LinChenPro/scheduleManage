@@ -8,9 +8,9 @@ CREATE TABLE `ProcedureLock` (
   `tid` int(6) NOT NULL,
   `sid` int(6) DEFAULT NULL,
   `cid` int(6) DEFAULT NULL,
-  `expireTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `lastAcces` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `expireTime` timestamp NOT NULL,
+  `createTime` timestamp NOT NULL,
+  `lastAcces` timestamp NOT NULL ON UPDATE CURRENT_TIMESTAMP,
   `statut` varchar(10) DEFAULT 'ALIVE',
   PRIMARY KEY (`lockid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8
@@ -22,9 +22,16 @@ grant all on schedules.* to moodle31user@localhost identified by 'pass'
 */
 
 /* db temp functions*/
-$servername = "localhost";
 $username = "moodle31user";
+
+// local
+$servername = "localhost";
 $password = "pass";
+
+// server
+// $servername = "xxxxxx";
+// $password = "pass";
+
 $dbname = getScheduleDbName();
 
 function getScheduleDbName(){
@@ -272,7 +279,7 @@ class ProcedureType {
 			$sid = $sid==null?"NULL":$sid;
 			$cid = $cid==null?"NULL":$cid;
 
-			$sql = "insert into ProcedureLock(lockType, crtStep, uid, tid, sid, cid, expireTime) values('$lockType', '$crtStep', $uid, $tid, $sid, $cid, date_add(CURRENT_TIMESTAMP, interval 20 minute))";
+			$sql = "insert into ProcedureLock(lockType, crtStep, uid, tid, sid, cid, createTime, lastAcces, expireTime) values('$lockType', '$crtStep', $uid, $tid, $sid, $cid, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, date_add(CURRENT_TIMESTAMP, interval 20 minute))";
 			$insertRes = query($sql);
 			if($insertRes === TRUE){
 				$res = new DemandLockResult(getUserLiveLock($uid));
@@ -302,6 +309,8 @@ class ProcedureTypeSchedule extends ProcedureType{
 		$lock->crtStep = getStepByName($demand->step_name);
 		if($lock->crtStep->isArchiveStep()){
 			$lock->statut = "ARCHIVE";
+		}else if($lock->crtStep->isCancelStep()){
+			$lock->statut = "CANCELLED";
 		}
 		$lock = updateLockToDB($lock);
 		return new DemandLockResult($lock); 
@@ -318,6 +327,8 @@ class ProcedureTypeReservation extends ProcedureType{
 		$lock->crtStep = getStepByName($demand->step_name);
 		if($lock->crtStep->isArchiveStep()){
 			$lock->statut = "ARCHIVE";
+		}else if($lock->crtStep->isCancelStep()){
+			$lock->statut = "CANCELLED";
 		}
 		$lock = updateLockToDB($lock);
 		// var_dump($lock);
@@ -331,7 +342,8 @@ class StepInfo {
 	public $nextSteps;
 	public $treatFile;
 	public $allowCancel;
-	public $isArchiveStep = false;
+	public $archiveStep = false;
+	public $cancelStep = false;
 
 	function isFirstStep(){
 		return $this == getProcedureType()->firstStep;
@@ -382,11 +394,20 @@ class StepInfo {
 	}
 
 	function isArchiveStep(){
-		return $this->isArchiveStep;
+		return $this->archiveStep;
 	}
 
-	function setArchiveStep($isArchiveStep){
-		$this->isArchiveStep = $isArchiveStep;
+	function setArchiveStep($archiveStep){
+		$this->archiveStep = $archiveStep;
+		return $this;
+	}
+
+	function isCancelStep(){
+		return $this->cancelStep;
+	}
+
+	function setCancelStep($cancelStep){
+		$this->cancelStep = $cancelStep;
 		return $this;
 	}
 
@@ -493,6 +514,7 @@ $STEP_RES_FINISH	= new StepInfo("RESERVATION", "RES_FINISH", false, "reservation
 $STEP_RES_DEFAULT	= new StepInfo("RESERVATION", "RES_DEFAULT", false, "reservation_default");
 
 $STEP_RES_FINISH->setArchiveStep(true);
+$STEP_RES_CANCEL->setCancelStep(true);
 $STEP_RES_SELECT->setNextSteps(array($STEP_RES_VERIFY, $STEP_RES_CANCEL));
 $STEP_RES_VERIFY->setNextSteps(array($STEP_RES_PAYING, $STEP_RES_SELECT, $STEP_RES_CANCEL));
 $STEP_RES_PAYING->setNextSteps(array($STEP_RES_FINISH, $STEP_RES_CANCEL));
@@ -504,6 +526,7 @@ $STEP_SCD_FINISH	= new StepInfo("SCHEDULE", "SCD_FINISH", false, "schedule_finis
 $STEP_SCD_DEFAULT	= new StepInfo("SCHEDULE", "SCD_DEFAULT", false, "schedule_default");
 
 $STEP_SCD_FINISH->setArchiveStep(true);
+$STEP_SCD_CANCEL->setCancelStep(true);
 $STEP_SCD_SELECT->setNextSteps(array($STEP_SCD_FINISH, $STEP_SCD_CANCEL));
 
 $PROCEDURE_RESERVATION = new ProcedureTypeReservation(
