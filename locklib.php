@@ -22,9 +22,34 @@ grant all on schedules.* to moodle31user@localhost identified by 'pass'
 */
 
 /* db temp functions*/
+
+/*
+wwww.db4free.net : 
+$username = "testschedu";
+$password = "test4edu";
+*/
+
+/*
+sql11.freesqldatabase.com :
+user : lin.chen.pro@gmail.com
+pass : test4edu
+
+$dbname = "sql11184755"
+$username = "sql11184755";
+$password = "??????";
+
+
+*/
+
+/*
+wwww.db4free.net : 
+$username = "testschedu";
+$password = "test4edu";
+*/
+
 $servername = "localhost";
-$username = "moodle31user";
-$password = "pass";
+$username = "testschedu";
+$password = "test4edu";
 $dbname = getScheduleDbName();
 
 function getScheduleDbName(){
