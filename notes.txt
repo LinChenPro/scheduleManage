@@ -1,0 +1,12 @@
+free mysql servers
+	wwww.db4free.net : 
+	$username = "testschedu";
+	$password = "test4edu";
+
+
+	sql11.freesqldatabase.com :
+	user : lin.chen.pro@gmail.com
+	pass : test4edu
+	$dbname = "sql11184755"
+	$username = "sql11184755";
+	$password = "??????";

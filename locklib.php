@@ -22,50 +22,17 @@ grant all on schedules.* to moodle31user@localhost identified by 'pass'
 */
 
 /* db temp functions*/
-/*
-wwww.db4free.net : 
-$username = "testschedu";
-$password = "test4edu";
-*/
-
-/*
-sql11.freesqldatabase.com :
-user : lin.chen.pro@gmail.com
-pass : test4edu
-
-$dbname = "sql11184755"
-$username = "sql11184755";
-$password = "??????";
-
-
-*/
-
-/*
-wwww.db4free.net : 
-$username = "testschedu";
-$password = "test4edu";
-*/
-
 /**/
-$servername = "lsserver";
-$username = "testschedu";
-$password = "test4edu";
-/**/
-
-/*
 // local
 $username = "moodle31user";
 $servername = "localhost";
 $password = "pass";
-*/
+/**/
 
 $dbname = getScheduleDbName();
-
 function getScheduleDbName(){
-	// return "moodle31Proto";
 	return "schedules";
 }
-
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
@@ -126,7 +93,7 @@ class ProcedureLock{
 			return ActionResult::getInstance(false, getFrontText("CAN_NOT_CANCEL"), null); // TODO 2 : detail info, if statut cancelled ?
 		}else{
 			// TODO B: need atom protect and error traitement?
-			$sql = "update ProcedureLock set statut='CANCELLED' where statut='ALIVE' and expireTime>CURRENT_TIMESTAMP and lockid=_LOCKID";
+			$sql = "update ProcedureLock set statut='CANCELLED', lastAcces=CURRENT_TIMESTAMP where statut='ALIVE' and expireTime>CURRENT_TIMESTAMP and lockid=_LOCKID";
 			$sql = str_replace("_LOCKID", $this->lockId, $sql);
 			query($sql);
 			$reloadCurrentLock = getLockById($this->lockid);
@@ -675,7 +642,7 @@ function getLockFromQuery($sql){
 }
 
 function updateLockToDB($lock){
-	$sql = "update ProcedureLock set crtStep='".$lock->crtStep->stepName."', expireTime='".$lock->expireTime."', statut='".$lock->statut."' where lockid=".$lock->lockId;
+	$sql = "update ProcedureLock set crtStep='".$lock->crtStep->stepName."', lastAcces=CURRENT_TIMESTAMP, expireTime='".$lock->expireTime."', statut='".$lock->statut."' where lockid=".$lock->lockId;
 	// echo " $sql ";
 	$res = query($sql);
 	return getLockById($lock->lockId);
